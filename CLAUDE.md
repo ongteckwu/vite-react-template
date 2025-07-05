@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development (Docker - Recommended)
 ```bash
-docker-compose up                    # Start all services (PostgreSQL, backend, frontend)
-docker-compose up -d                 # Start services in detached mode
-docker-compose down                  # Stop all services
-docker-compose logs -f backend       # View backend logs
-docker-compose logs -f frontend      # View frontend logs
+docker-compose -f docker-compose.dev.yml up                    # Start all services for development
+docker-compose -f docker-compose.dev.yml up -d                 # Start services in detached mode
+docker-compose -f docker-compose.dev.yml down                  # Stop all services
+docker-compose -f docker-compose.dev.yml logs -f backend       # View backend logs
+docker-compose -f docker-compose.dev.yml logs -f frontend      # View frontend logs
 ```
 
 ### Development (Local)
@@ -28,11 +28,17 @@ cd frontend && bun test:ui           # Run frontend tests with UI
 
 ### Production
 ```bash
-# Backend
+# Docker Production
+docker-compose -f docker-compose.prod.yml up                   # Start all services for production
+docker-compose -f docker-compose.prod.yml up -d                # Start services in detached mode
+docker-compose -f docker-compose.prod.yml down                 # Stop all services
+docker-compose -f docker-compose.prod.yml logs -f backend      # View backend logs
+docker-compose -f docker-compose.prod.yml logs -f frontend     # View frontend logs
+
+# Local Production
 cd backend && bun build             # Build backend
 cd backend && bun start             # Start production server
 
-# Frontend
 cd frontend && bun build            # Build frontend for production
 cd frontend && bun preview          # Preview production build
 ```
@@ -87,10 +93,14 @@ This is a modern full-stack TypeScript monorepo with the following structure:
 - `frontend/vitest.config.ts` - Frontend test configuration
 
 #### Infrastructure
-- `docker-compose.yml` - Multi-service Docker setup
+- `docker-compose.dev.yml` - Development Docker setup
+- `docker-compose.prod.yml` - Production Docker setup
 - `.env.example` - Environment variables template
-- `backend/Dockerfile` - Backend container configuration
-- `frontend/Dockerfile` - Frontend container configuration
+- `backend/Dockerfile.dev` - Backend development container
+- `backend/Dockerfile.prod` - Backend production container
+- `frontend/Dockerfile.dev` - Frontend development container
+- `frontend/Dockerfile.prod` - Frontend production container
+- `frontend/nginx.conf` - Nginx configuration for production
 
 ### TypeScript Configuration
 - **Strict mode** enabled for maximum type safety
@@ -101,7 +111,7 @@ This is a modern full-stack TypeScript monorepo with the following structure:
 
 ### Development Workflow
 
-1. **Start Development**: `docker-compose up` starts PostgreSQL, backend, and frontend
+1. **Start Development**: `docker-compose -f docker-compose.dev.yml up` starts PostgreSQL, backend, and frontend
 2. **Database Schema**: Automatically updated on backend start
 3. **Type Safety**: Full end-to-end types from database to UI
 4. **Hot Reload**: Both frontend and backend reload on changes
@@ -168,6 +178,12 @@ This is a modern full-stack TypeScript monorepo with the following structure:
 - **Volumes**: Persistent data storage
 - **Health Check**: Ensures database is ready
 
+#### Adminer
+- **Image**: adminer:latest
+- **Port**: 8080
+- **Purpose**: Database administration interface
+- **Access**: http://localhost:8080
+
 #### Backend
 - **Image**: Custom Bun-based image
 - **Port**: 3001
@@ -195,8 +211,8 @@ This is a modern full-stack TypeScript monorepo with the following structure:
 
 1. **Clone and Setup**: Repository is ready to use
 2. **Environment**: Copy `.env.example` to `.env` and configure
-3. **Start Services**: `docker-compose up` launches everything
-4. **Access**: Frontend at http://localhost:5173, Backend at http://localhost:3001
+3. **Start Services**: `docker-compose -f docker-compose.dev.yml up` launches everything for development
+4. **Access**: Frontend at http://localhost:5173, Backend at http://localhost:3001, Adminer at http://localhost:8080
 5. **Develop**: Edit files and see changes instantly with hot reload
 6. **Test**: Run tests with `bun test` in respective directories
 
