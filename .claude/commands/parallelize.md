@@ -1,1 +1,1 @@
-implement all todos/subtasks with no dependencies or with done dependencies in parallel with multiple subagents, then perform any de-conflicting at the end for:
+implement all todos/subtasks with no dependencies or with done dependencies in parallel with multiple subagents, then perform any de-conflicting at the end, and ensure the new components work together. Do it for:
