@@ -6,7 +6,8 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
-      "Bash(bun install:*)"
+      "Bash(bun install:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

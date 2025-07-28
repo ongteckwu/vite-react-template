@@ -3,21 +3,20 @@ import { cors } from 'hono/cors'
 import { serve } from '@hono/node-server'
 import { trpcServer } from '@hono/trpc-server'
 import { MikroORM } from '@mikro-orm/postgresql'
-import { appRouter } from './trpc/router'
+import { createAppRouter } from '@repo/trpc'
 import { createContext } from './trpc/context'
-import config from './config/mikro-orm'
-import dotenv from 'dotenv'
-
-dotenv.config()
+import { User, mikroOrmConfig } from '@repo/db'
+import { env } from '@repo/config'
 
 const app = new Hono()
 
 // Initialize MikroORM
 let orm: MikroORM
+const appRouter = createAppRouter(User)
 
 async function initializeORM() {
   try {
-    orm = await MikroORM.init(config)
+    orm = await MikroORM.init(mikroOrmConfig)
     const generator = orm.getSchemaGenerator()
     
     // Create database schema (tables) if they don't exist
@@ -61,7 +60,7 @@ app.get('/', (c) => {
   })
 })
 
-const port = process.env.PORT ? parseInt(process.env.PORT) : 3001
+const port = env.PORT
 
 // Start server
 async function startServer() {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useUsers, useCreateUser, useDeleteUser, useUpdateUser } from '../hooks/api'
+import type { User } from '@repo/db'
 
 export function UserList() {
   const [name, setName] = useState('')
@@ -123,7 +124,7 @@ export function UserList() {
                 </td>
               </tr>
             ) : (
-              users?.map((user) => (
+              users?.map((user: User) => (
                 <tr key={user.id}>
                   <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>

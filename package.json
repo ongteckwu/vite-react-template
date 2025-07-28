@@ -1,0 +1,22 @@
+{
+  "name": "monorepo-template",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter=\"./apps/*\" build",
+    "dev": "docker-compose -f docker-compose.dev.yml up",
+    "dev:web": "bun run --filter=\"./apps/web\" dev",
+    "dev:api": "bun run --filter=\"./apps/api\" dev",
+    "test": "bun run --filter=\"./apps/*\" --filter=\"./packages/*\" test",
+    "lint": "bun run --filter=\"./apps/*\" --filter=\"./packages/*\" lint",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.2"
+  }
+}

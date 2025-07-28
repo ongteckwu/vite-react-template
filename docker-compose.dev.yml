@@ -21,8 +21,8 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
     container_name: template_backend_dev
     restart: unless-stopped
     ports:
@@ -39,14 +39,15 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./backend:/app
+      - .:/app
       - /app/node_modules
+    working_dir: /app/apps/api
     command: bun run dev
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
     container_name: template_frontend_dev
     restart: unless-stopped
     ports:
@@ -54,8 +55,9 @@ services:
     environment:
       - VITE_API_URL=http://localhost:3001
     volumes:
-      - ./frontend:/app
+      - .:/app
       - /app/node_modules
+    working_dir: /app/apps/web
     command: bun run dev
 
   adminer:
