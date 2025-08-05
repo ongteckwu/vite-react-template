@@ -127,3 +127,255 @@ Default ports:
 - API: 3001  
 - PostgreSQL: 5432
 - Adminer: 8080
+
+
+
+## Common Patterns
+
+### File Upload Pattern
+```typescript
+// Standard file upload with progress tracking
+const handleFileUpload = async (file: File) => {
+  setLoading(true)
+  try {
+    // 1. Validate file type and size
+    if (!file.name.endsWith('.pdf')) throw new Error('Only PDF files allowed')
+    
+    // 2. Read file content
+    const content = await file.text()
+    
+    // 3. Process with loading state
+    const result = await processFile(content)
+    
+    // 4. Update global state
+    setUploadedFiles(prev => [...prev, result])
+    
+    // 5. Navigate on success
+    navigate('/dashboard')
+  } catch (error) {
+    console.error('Upload failed:', error)
+    // Show user-friendly error
+  } finally {
+    setLoading(false)
+  }
+}
+```
+
+### Data Conversion Pattern (ComplianceReportConverter)
+```typescript
+// JSON → Entity conversion for database storage
+class ComplianceReportConverter {
+  static async fromJSON(json: ComplianceReportJSON, em: EntityManager) {
+    // 1. Create main entity
+    const report = new ComplianceReport()
+    report.companyName = json.document_metadata.company_name
+    
+    // 2. Create related entities
+    const violations = json.violations.map(v => {
+      const violation = new Violation()
+      violation.uniqueId = v.unique_id
+      violation.locations = v.locations // JSONB field
+      return violation
+    })
+    
+    // 3. Set relationships
+    report.violations.set(violations)
+    
+    // 4. Persist in transaction
+    await em.persistAndFlush(report)
+    return report
+  }
+  
+  static toJSON(report: ComplianceReport): ComplianceReportJSON {
+    // Reverse conversion for API responses
+  }
+}
+```
+
+### Custom Hook Pattern
+```typescript
+// Consistent API hook pattern with loading states
+export const useComplianceReport = (reportId: string) => {
+  const query = trpc.compliance.getById.useQuery(
+    { id: reportId },
+    {
+      enabled: !!reportId,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 2,
+    }
+  )
+  
+  return {
+    data: query.data,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  }
+}
+```
+
+### Loading State Pattern
+```typescript
+// Consistent loading/error/empty states
+const DataDisplay: React.FC<{ id: string }> = ({ id }) => {
+  const { data, isLoading, error } = useData(id)
+  
+  if (isLoading) return <LoadingSpinner />
+  if (error) return <ErrorMessage error={error} />
+  if (!data) return <EmptyState message="No data available" />
+  
+  return <DataContent data={data} />
+}
+```
+
+### Form Handling Pattern
+```typescript
+// Form with validation and error handling
+const ComplianceForm: React.FC = () => {
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const mutation = trpc.compliance.create.useMutation({
+    onSuccess: (data) => {
+      toast.success('Report created successfully')
+      navigate(`/report/${data.id}`)
+    },
+    onError: (error) => {
+      if (error.data?.zodError) {
+        setErrors(error.data.zodError.fieldErrors)
+      } else {
+        toast.error('Failed to create report')
+      }
+    },
+  })
+  
+  const handleSubmit = async (formData: FormData) => {
+    setErrors({})
+    await mutation.mutate(formData)
+  }
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* Form fields with inline error display */}
+    </form>
+  )
+}
+```
+
+### State Management Pattern
+```typescript
+// Context for complex state with actions
+interface AppState {
+  uploadedFiles: UploadedFile[]
+  complianceReport: ComplianceReport | null
+  selectedViolation: string | null
+}
+
+interface AppActions {
+  setUploadedFiles: (files: UploadedFile[]) => void
+  clearReport: () => void
+  selectViolation: (id: string) => void
+}
+
+const AppContext = createContext<AppState & AppActions>(null!)
+
+// Use with custom hook for type safety
+export const useAppState = () => {
+  const context = useContext(AppContext)
+  if (!context) throw new Error('useAppState must be within AppProvider')
+  return context
+}
+```
+
+### Error Boundary Pattern
+```typescript
+// Catch and display errors gracefully
+class ErrorBoundary extends Component<Props, State> {
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+  
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Error boundary caught:', error, info)
+    // Send to error tracking service
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback error={this.state.error} />
+    }
+    return this.props.children
+  }
+}
+```
+
+### Authentication Pattern (Future Implementation)
+```typescript
+// Placeholder for future auth implementation
+interface AuthContext {
+  user: User | null
+  isAuthenticated: boolean
+  login: (credentials: Credentials) => Promise<void>
+  logout: () => void
+}
+
+// Protected route pattern
+const ProtectedRoute: React.FC<Props> = ({ children }) => {
+  const { isAuthenticated } = useAuth()
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+  
+  return children
+}
+```
+
+### Service Architecture Pattern
+```typescript
+// Service interface for clear contracts
+interface IComplianceService {
+  analyzeDocument(fileKey: string): Promise<ComplianceReportJSON>
+  validateViolations(reportId: number): Promise<ValidationResult>
+}
+
+// Service implementation with dependency injection
+export class ComplianceService implements IComplianceService {
+  constructor(
+    private em: EntityManager,
+    private aiClient: OpenAI,
+    private s3Service: S3Service
+  ) {}
+  
+  async analyzeDocument(fileKey: string): Promise<ComplianceReportJSON> {
+    // 1. Fetch document from S3
+    const document = await this.s3Service.getDocument(fileKey)
+    
+    // 2. Extract text and structure
+    const extracted = await this.extractDocumentData(document)
+    
+    // 3. Analyze compliance
+    const violations = await this.analyzeCompliance(extracted)
+    
+    // 4. Generate report
+    return this.generateReport(extracted, violations)
+  }
+  
+  private async extractDocumentData(document: Buffer): Promise<ExtractedData> {
+    // Implementation details
+  }
+  
+  private async analyzeCompliance(data: ExtractedData): Promise<Violation[]> {
+    // AI-powered analysis
+  }
+}
+
+// Usage in tRPC router
+const complianceRouter = router({
+  analyze: publicProcedure
+    .input(z.object({ fileKey: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const service = new ComplianceService(ctx.em, aiClient, s3Service)
+      return await service.analyzeDocument(input.fileKey)
+    })
+})
+```
+
